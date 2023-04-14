@@ -67,17 +67,23 @@ while True:
         response = requests.get(url)
         data = response.json()
 
-        filtered_data = [coin for coin in data if float(coin['priceChangePercent']) < -10 or float(coin['priceChangePercent']) > 10]
+
+        coins = get_coins(data)
+        usdt_coins = [coin for coin in coins if "usdt" in coin.symbol.lower()]
+
+        print(usdt_coins)
+
+        filtered_data = [coin for coin in data if (float(coin['priceChangePercent']) < -10 or float(coin['priceChangePercent']) > 10) and "usdt" in coin['symbol'].lower()]
         sorted_data = sorted(filtered_data, key=lambda p: p['priceChangePercent'])
 
-        data_without_small_coins = [coin for coin in data if float(coin['lastPrice']) > 0.000001]
+        data_without_small_coins = [coin for coin in data if float(coin['lastPrice']) > 0.000001 and "usdt" in coin['symbol'].lower()]
 
         update_cache(prices_cache, sorted_data)
         update_cache(total_cache, data_without_small_coins)
 
         os.system('clear')
         sorted_total_cache = sorted(total_cache.items(), key=lambda x: abs(x[1]['change_percent']), reverse=True)
-        for entry in sorted_total_cache[:10]:
+        for entry in sorted_total_cache[:20]:
             print(entry)
 
         # Extract coin names and price change percentage for plotting
