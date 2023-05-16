@@ -13,4 +13,4 @@ python3 crypto_helper.py
 ```
 
 
-![Image Description](relative_path_to_image.png)
+![Image Description](crypto_helper.png)
