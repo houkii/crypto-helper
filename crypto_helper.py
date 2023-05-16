@@ -9,10 +9,8 @@ import os
 # Define API endpoint and parameters
 url = 'https://api.binance.com/api/v3/ticker/24hr'
 
-# Set interactive mode on
+# Initialize plots
 plt.ion()
-
-# Initialize plot
 fig, axs = plt.subplots(2, 1, figsize=(10, 8), sharex=False)
 fig.subplots_adjust(hspace=0.5)
 
@@ -23,8 +21,10 @@ total_cache = {}
 grey = "#8C8C8C"
 green = "#00FF00"
 red = "#FF0000"
-
 stablecoin = "USDT"
+min_percent_change = 10
+min_coin_value = 0.000001
+num_biggest_changes = 20
 
 class Coin:
     def __init__(self, name, last_price, change, start_price=None):
@@ -57,7 +57,7 @@ def update_cache(cache, data, print_=False):
         if print_:
             print(f"start_price: {coin_obj.start_price}\ndiff since start: {coin_obj.change_percent}%\n")
 
-def colorFader(c1,c2,mix=0): #fade (linear interpolate) from color c1 (at mix=0) to c2 (mix=1)
+def colorFader(c1,c2,mix=0):
     c1=np.array(mpl.colors.to_rgb(c1))
     c2=np.array(mpl.colors.to_rgb(c2))
     return mpl.colors.to_hex((1-mix)*c1 + mix*c2)
@@ -90,7 +90,6 @@ def plot_volatile(coins, container):
 
         # Set the color depending on the value of the change percent
         color = get_color(coin.change_percent)
-
         bar = container.bar(coin.name, coin.current_percent_change, color=color)
 
         # Add text to the top of the bar
@@ -121,17 +120,16 @@ while True:
         response = requests.get(url)
         data = response.json()
 
-        filtered_data = [coin for coin in data if (float(coin['priceChangePercent']) < -10 or float(coin['priceChangePercent']) > 10) and stablecoin in coin['symbol']]
+        filtered_data = [coin for coin in data if (float(coin['priceChangePercent']) < -min_percent_change or float(coin['priceChangePercent']) > min_percent_change) and stablecoin in coin['symbol']]
         sorted_data = sorted(filtered_data, key=lambda p: p['priceChangePercent'])
-
-        data_without_small_coins = [coin for coin in data if float(coin['lastPrice']) > 0.000001 and stablecoin in coin['symbol']]
+        data_without_small_coins = [coin for coin in data if float(coin['lastPrice']) > min_coin_value and stablecoin in coin['symbol']]
 
         update_cache(prices_cache, sorted_data)
         update_cache(total_cache, data_without_small_coins)
 
         os.system('clear')
         sorted_total_cache = sorted(total_cache.values(), key=lambda x: abs(x.change_percent), reverse=True)
-        sorted_total_cache = sorted(sorted_total_cache[:20], key=lambda x: x.change_percent, reverse=True)
+        sorted_total_cache = sorted(sorted_total_cache[:num_biggest_changes], key=lambda x: x.change_percent, reverse=True)
         for coin in sorted_total_cache:
             print(f"{coin.name}: {coin.last_price} ({round(coin.change_percent, 1)}%)")
 
